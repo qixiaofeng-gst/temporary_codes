@@ -51,29 +51,29 @@ if result > 0:
 	if api.init_winusb_device(pl2303_vid, pl2303_pid):
 		speed = api.query_device_info(query=1)
 		if speed != -1:
-			print "Device Speed: " + str(speed)
+			print("Device Speed: " + str(speed))
 		else:
-			print "Device speed could not be obtained"
+			print("Device speed could not be obtained")
 
 		interface_descriptor = api.query_interface_settings(0)
 
 		if interface_descriptor != None:
-			print "bLength: " + str(interface_descriptor.b_length)
-			print "bDescriptorType: " + str(interface_descriptor.b_descriptor_type)
-			print "bInterfaceNumber: " + str(interface_descriptor.b_interface_number)
-			print "bAlternateSetting: " + str(interface_descriptor.b_alternate_setting)
-			print "bNumEndpoints " + str(interface_descriptor.b_num_endpoints)
-			print "bInterfaceClass " + str(interface_descriptor.b_interface_class)
-			print "bInterfaceSubClass: " + str(interface_descriptor.b_interface_sub_class)
-			print "bInterfaceProtocol: " + str(interface_descriptor.b_interface_protocol)
-			print "iInterface: " + str(interface_descriptor.i_interface)
+			print("bLength: " + str(interface_descriptor.b_length))
+			print("bDescriptorType: " + str(interface_descriptor.b_descriptor_type))
+			print("bInterfaceNumber: " + str(interface_descriptor.b_interface_number))
+			print("bAlternateSetting: " + str(interface_descriptor.b_alternate_setting))
+			print("bNumEndpoints " + str(interface_descriptor.b_num_endpoints))
+			print("bInterfaceClass " + str(interface_descriptor.b_interface_class))
+			print("bInterfaceSubClass: " + str(interface_descriptor.b_interface_sub_class))
+			print("bInterfaceProtocol: " + str(interface_descriptor.b_interface_protocol))
+			print("iInterface: " + str(interface_descriptor.i_interface))
 
 		pipe_info_list = map(api.query_pipe, range(interface_descriptor.b_num_endpoints))
 		for item in pipe_info_list:
-				print "PipeType: " + str(item.pipe_type)
-				print "PipeId: " + str(item.pipe_id)
-				print "MaximumPacketSize: " + str(item.maximum_packet_size)
-				print "Interval: " + str(item.interval)
+				print("PipeType: " + str(item.pipe_type))
+				print("PipeId: " + str(item.pipe_id))
+				print("MaximumPacketSize: " + str(item.maximum_packet_size))
+				print("Interval: " + str(item.interval))
 
 		"""
 		buff = None -> Buffer length will be zero. No data expected
@@ -127,9 +127,8 @@ if result > 0:
 		time.sleep(0.380)
 		api.write(0x02, tx12)
 
-
 	else:
-		print "PL2303 could not be init"
+		print("PL2303 could not be init")
 
 else:
-	print "No Usb devices connected"
+	print("No Usb devices connected")
