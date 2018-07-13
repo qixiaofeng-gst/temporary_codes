@@ -63,6 +63,7 @@ class WinUsbPy(object):
 			):
 				path = wstring_at(byref(sp_device_interface_detail_data, sizeof(DWORD)))
 				self.device_paths.append(path)
+				print('==== hello', path)
 			i += 1
 			member_index = DWORD(i)
 			required_size = c_ulong(0)
