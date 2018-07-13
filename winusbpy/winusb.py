@@ -1,11 +1,10 @@
-from winusberror import WinUSBError
-from winusbutils import *
+from winusbpy.winusberror import WinUSBError
+from winusbpy.winusbutils import *
 
 class WinUSBApi(object):
 	""" Facade class wrapping USB library WinUSB"""
 
 	def __init__(self):
-
 		try:
 			self._kernel32 = windll.kernel32
 		except WindowsError:

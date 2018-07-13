@@ -3,7 +3,7 @@ import time
 from winusbpy import *
 from ctypes import *
 from ctypes.wintypes import *
-from winusbclasses import DIGCF_DEVICE_INTERFACE, DIGCF_PRESENT, GENERIC_WRITE, GENERIC_READ, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, FILE_FLAG_OVERLAPPED, INVALID_HANDLE_VALUE
+from winusbpy.winusbclasses import DIGCF_DEVICE_INTERFACE, DIGCF_PRESENT, GENERIC_WRITE, GENERIC_READ, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, FILE_FLAG_OVERLAPPED, INVALID_HANDLE_VALUE
 
 pl2303_vid = "067b"
 pl2303_pid = "2303"
@@ -34,24 +34,24 @@ pkt19 = UsbSetupPacket(0xc0, 0x01, 0x0081, 0x00, 0x02)
 pkt20 = UsbSetupPacket(0x40, 0x01, 0x0000, 0x01, 0x00)
 
 """ USB Data"""
-hello = create_string_buffer("Hello")
-header = create_string_buffer("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x01\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00")
-tx1 = create_string_buffer("\x18")
-tx2 = create_string_buffer("\x08")
-tx3 = create_string_buffer("\x08")
-tx4 = create_string_buffer("\x14")
-tx5 = create_string_buffer("\x14")
-tx6 = create_string_buffer("\x22")
-tx7 = create_string_buffer("\x3e")
-tx8 = create_string_buffer("\x22")
-tx9 = create_string_buffer("\x77")
-tx10 = create_string_buffer("\x00")
-tx11 = create_string_buffer("\x00")
-tx12 = create_string_buffer("\x00")
+hello = create_string_buffer(b"Hello")
+header = create_string_buffer(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00\x00\x01\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00\x08\x01\x00\x00")
+tx1 = create_string_buffer(b"\x18")
+tx2 = create_string_buffer(b"\x08")
+tx3 = create_string_buffer(b"\x08")
+tx4 = create_string_buffer(b"\x14")
+tx5 = create_string_buffer(b"\x14")
+tx6 = create_string_buffer(b"\x22")
+tx7 = create_string_buffer(b"\x3e")
+tx8 = create_string_buffer(b"\x22")
+tx9 = create_string_buffer(b"\x77")
+tx10 = create_string_buffer(b"\x00")
+tx11 = create_string_buffer(b"\x00")
+tx12 = create_string_buffer(b"\x00")
 
 api = WinUSBApi()
 byte_array = c_byte * 8
-guid = GUID(0xA5DCBF10L, 0x6530, 0x11D2, byte_array(0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED))
+guid = GUID(0xA5DCBF10, 0x6530, 0x11D2, byte_array(0x90, 0x1F, 0x00, 0xC0, 0x4F, 0xB9, 0x51, 0xED))
 flags = DWORD(DIGCF_DEVICE_INTERFACE | DIGCF_PRESENT)
 i = 0
 member_index = DWORD(i)
@@ -68,23 +68,31 @@ sp_device_info_data.cb_size = sizeof(sp_device_info_data)
 Enumerate all USB Devices Searching for a PL2303 device
 """
 hdev_info = api.exec_function_setupapi("SetupDiGetClassDevs", byref(guid), None, None, flags)
+print('==== hdev_info:', hdev_info)
 
 while api.exec_function_setupapi("SetupDiEnumDeviceInterfaces", hdev_info, None, byref(guid), member_index, byref(sp_device_interface_data)):
 	# Get the required buffer size and resize SpDeviceInterfaceDetailData
 	api.exec_function_setupapi("SetupDiGetDeviceInterfaceDetail", hdev_info, byref(sp_device_interface_data), None, 0, byref(required_size), None)
 	resize(sp_device_interface_detail_data, required_size.value)
 	
-	""" I have been stuck here for hours. cb_size must reflect the fix part of the Struct!!!!"""
+	#I have been stuck here for hours. cb_size must reflect the fix part of the Struct!!!!
 	sp_device_interface_detail_data.cb_size = sizeof(SpDeviceInterfaceDetailData) - sizeof(WCHAR * 1)
 	
-	if api.exec_function_setupapi("SetupDiGetDeviceInterfaceDetail", hdev_info, byref(sp_device_interface_data), byref(sp_device_interface_detail_data), required_size, byref(required_size), byref(sp_device_info_data)):
+	if api.exec_function_setupapi(
+		"SetupDiGetDeviceInterfaceDetail",
+		hdev_info, byref(sp_device_interface_data),
+		byref(sp_device_interface_detail_data),
+		required_size, byref(required_size),
+		byref(sp_device_info_data)
+	):
 		path = wstring_at(byref(sp_device_interface_detail_data, sizeof(DWORD)))
+		print('==== path:', path)
 		if is_device(pl2303_vid, pl2303_pid, path):
-			print "PL 2303 PATH: " + path
+			print("PL 2303 PATH: " + path)
 			break
 	else:
 		error_code = api.exec_function_kernel32("GetLastError")
-		print "Error: " + str(error_code)
+		print("Error: " + str(error_code))
 
 	i += 1
 	member_index = DWORD(i)
@@ -92,13 +100,18 @@ while api.exec_function_setupapi("SetupDiEnumDeviceInterfaces", hdev_info, None,
 	resize(sp_device_interface_detail_data, sizeof(SpDeviceInterfaceDetailData))
 
 """Open PL2303 Device"""
-handle_file = api.exec_function_kernel32("CreateFileW", path, GENERIC_WRITE|GENERIC_READ, FILE_SHARE_WRITE|FILE_SHARE_READ, None, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, None)
+handle_file = api.exec_function_kernel32(
+	"CreateFileW", path, GENERIC_WRITE|GENERIC_READ, FILE_SHARE_WRITE|FILE_SHARE_READ,
+	None, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OVERLAPPED, None
+)
+print('====', INVALID_HANDLE_VALUE)
 if INVALID_HANDLE_VALUE == handle_file:
-	print "Error Creating File"
+	print("Error Creating File")
 else:
-	print "No error"
+	print("No error")
 	handle_winusb = c_void_p()
 	result = api.exec_function_winusb("WinUsb_Initialize", handle_file, byref(handle_winusb))
+	print('==== handle_file:', handle_file, 'handle_winusb:', handle_winusb)
 	if result != 0:
 		""" Get PL2303 Speed """
 		info_type = c_ulong(1)
@@ -107,28 +120,28 @@ else:
 
 		result = api.exec_function_winusb("WinUsb_QueryDeviceInformation", handle_winusb, info_type, byref(buff_length),buff)
 		if result != 0:
-			print "Speed: " + str(buff[0])
+			print("Speed: " + str(buff[0]))
 			
 		else:
 			error_code = api.exec_function_kernel32("GetLastError")
-			print "Error Query Device: " + str(error_code)
+			print("Error Query Device: " + str(error_code))
 
 		""" Interface Settings """
 		response = api.exec_function_winusb("WinUsb_QueryInterfaceSettings", handle_winusb ,c_ubyte(0), byref(interface_descriptor))
 		
 		if response == 0:
 			error_code = api.exec_function_kernel32("GetLastError")
-			print "Error Query Interface: " + str(error_code)
+			print("Error Query Interface: " + str(error_code))
 		if response != 0:
-			print "bLength: " + str(interface_descriptor.b_length)
-			print "bDescriptorType: " + str(interface_descriptor.b_descriptor_type)
-			print "bInterfaceNumber: " + str(interface_descriptor.b_interface_number)
-			print "bAlternateSetting: " + str(interface_descriptor.b_alternate_setting)
-			print "bNumEndpoints " + str(interface_descriptor.b_num_endpoints)
-			print "bInterfaceClass " + str(interface_descriptor.b_interface_class)
-			print "bInterfaceSubClass: " + str(interface_descriptor.b_interface_sub_class)
-			print "bInterfaceProtocol: " + str(interface_descriptor.b_interface_protocol)
-			print "iInterface: " + str(interface_descriptor.i_interface)
+			print("bLength: " + str(interface_descriptor.b_length))
+			print("bDescriptorType: " + str(interface_descriptor.b_descriptor_type))
+			print("bInterfaceNumber: " + str(interface_descriptor.b_interface_number))
+			print("bAlternateSetting: " + str(interface_descriptor.b_alternate_setting))
+			print("bNumEndpoints " + str(interface_descriptor.b_num_endpoints))
+			print("bInterfaceClass " + str(interface_descriptor.b_interface_class))
+			print("bInterfaceSubClass: " + str(interface_descriptor.b_interface_sub_class))
+			print("bInterfaceProtocol: " + str(interface_descriptor.b_interface_protocol))
+			print("iInterface: " + str(interface_descriptor.i_interface))
 
 			""" Endpoints information """
 			i = 0
@@ -137,10 +150,10 @@ else:
 			while i <= interface_descriptor.b_num_endpoints:
 				result = api.exec_function_winusb("WinUsb_QueryPipe", handle_winusb, c_ubyte(0), endpoint_index, byref(pipe_info))
 				if result != 0:
-					print "PipeType: " + str(pipe_info.pipe_type)
-					print "PipeId: " + str(pipe_info.pipe_id)
-					print "MaximumPacketSize: " + str(pipe_info.maximum_packet_size)
-					print "Interval: " + str(pipe_info.interval)
+					print("PipeType: " + str(pipe_info.pipe_type))
+					print("PipeId: " + str(pipe_info.pipe_id))
+					print("MaximumPacketSize: " + str(pipe_info.maximum_packet_size))
+					print("Interval: " + str(pipe_info.interval))
 				i += 1
 				endpoint_index = c_ubyte(i)
 
@@ -202,4 +215,4 @@ else:
 
 	else:
 		error_code = api.exec_function_kernel32("GetLastError")
-		print "Error" + str(error_code)
+		print("Error" + str(error_code))

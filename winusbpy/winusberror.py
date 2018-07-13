@@ -1,6 +1,4 @@
-
 class WinUSBError(Exception):
-
 	def __init__(self, reason, response=None):
 		self.reason = reason
 		self.response = response
