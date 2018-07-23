@@ -1,0 +1,10 @@
+*.docx
+*.suo
+CypressControl/*
+*/bin/*
+__SkipCodeRush
+*/Properties/*
+*/obj/*
+*/*/bin/*
+*/*/obj/*
+*/*/Properties/*

@@ -1,0 +1,374 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using Com;
+using CyUSB;
+using System.Threading;
+
+namespace TC
+{
+    public class TCCypress : Cypress
+    {
+        public TCCypress(CypressControl cypressControl):base(cypressControl)
+        {
+            //test
+           // new TCFrame(configure);
+        }
+        
+        public override unsafe void ParseThread()
+        {
+            int frameLine = configure.FrameHeadLine;
+            int lineHeadLen = configure.LineHeadLen;
+            int lineEndLen = configure.LineEndLen;
+            int width = configure.Width;
+            int height = configure.Height;
+            int bits = configure.Bits;
+            string headString = configure.FrameHead;
+            
+            int pixelLen = width * bits / 8;
+            int frameHeadLength = lineHeadLen + lineEndLen + pixelLen;
+            int frameLength = (lineHeadLen + lineEndLen + pixelLen) * (height + frameLine)*2;
+            
+            int framePosition = 0;
+            bool isFindFrame = false;
+            bool isParseHead = false;
+
+            List<byte> cypressBytesList = new List<byte>(frameLength * 2);
+            Frame[] frameArray = new Frame[2];//0下标存储红波段，1下标存储蓝波段
+            for (int i = 0; i < frameArray.Length; i++)
+            {
+                frameArray[i] = new TCFrame(configure);
+            }
+            //测试用
+            Log test = new Log("Data", "test" + "_" + MyString.GetSystemTimeStamp() + ".dat", false, true, null);
+           
+            while (bRunning)
+            {
+                byte[] tmp = null;
+                syncEvent.WaitOne();
+                lock (xferData)
+                {
+                    try
+                    {
+                        if (xferData.length != 0)
+                        {
+                            test.Write(xferData.data, 0, xferData.length);
+
+                            tmp = new byte[xferData.length];
+                            Buffer.BlockCopy(xferData.data, 0, tmp, 0, xferData.length);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+
+                        MessageBox.Show(e.StackTrace, "Exception '" + e.Message + "' thrown by " + e.Source);
+                    }
+                    //tmp = new byte[xferData.length];
+                    //Buffer.BlockCopy(xferData.data, 0, tmp, 0, xferData.length);
+                }
+
+                if (tmp != null)
+                {
+                    cypressBytesList.AddRange(tmp);
+                }
+                //按照红波段和蓝波段划分帧
+                DivideFrame(cypressBytesList, frameArray);
+                //分别解析红波段和蓝波段帧
+                bool isParsed = true;
+                foreach(var frame in frameArray)
+                {
+                    if (frame.LineList.Count >= configure.Height)
+                    {
+                        frame.ParseFrame();
+                    }
+                    isParsed &= frame.IsParsed;
+                }
+                //红蓝波段图像都已解析,判断是否crc检验，若检验且crc正确则显示
+                if (isParsed)
+                {
+                    bool imageCrcResult = true;
+                    if (isCrcChecked)
+                    {
+                        foreach (var frame in frameArray)
+                        {
+                            List<LineData> lineList = frame.LineList;
+                            //crc检验，包括帧头和该帧每一行数据
+                            for (int i = 0; i < lineList.Count; i++)
+                            {
+                                if (lineList[i].CrcResult == false)
+                                {
+                                    imageCrcResult = false;
+                                    break;
+                                }
+                            }
+                            if (!imageCrcResult)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (imageCrcResult)
+                    {
+                        string direcorty = "Images";
+                        List<MyImage> imagesList = new List<MyImage>();
+                        List<List<ParseNode>> imageInforList = new List<List<ParseNode>>();
+                        foreach (var frame in frameArray)
+                        {
+                            if (frame != null)
+                            {
+                                if (frame.GetImage() != null)
+                                {
+                                    imagesList.Add(frame.GetImage());
+                                }
+                                if (frame.GetFrameHead().ParseNodeList != null)
+                                {
+                                    imageInforList.Add(frame.GetFrameHead().ParseNodeList);
+                                }
+                                
+                            }
+                            
+                        }
+
+                        cypressControl.Invoke(cypressControl.handFrameCallback, imageInforList, imagesList);
+                    }
+                    foreach (var frame in frameArray)
+                    {
+                        if (frame != null)
+                        {
+                            ((TCFrame)frame).Refresh();
+                        }
+                    }
+                }
+                
+
+                //    if (isLog)
+                //    {
+                //        //获取系统时间
+                //        string time = MyString.GetSystemTimeStamp();
+
+                //        //保存帧头信息
+                //        Log imageHeadLog = new Log(direcorty, time + "_" + frameHead.GetFrameNo() + ".txt", true, true, Encoding.Unicode);
+                //        try
+                //        {
+                //            for (int i = 0; i < frameHead.telemetryList.Count; i++)
+                //            {
+                //                imageHeadLog.WriteLine(frameHead.telemetryList[i].showField.Name + ": " +
+                //                    frameHead.telemetryList[i].showField.Value + ": " +
+                //                    frameHead.telemetryList[i].showField.Context);
+                //            }
+                //            imageHeadLog.CloseStream();
+                //        }
+                //        catch (Exception e)
+                //        {
+
+                //            MessageBox.Show(e.StackTrace, "Exception '" + e.Message + "' thrown by " + e.Source);
+                //        }
+
+                //        //保存帧
+                //        if (isAutoSaved)
+                //        {
+                //            //获取一帧数据
+                //            byte[] frameBytes = new byte[frameLength];
+                //            int frameBytesCount = 0;
+                //            //复制帧头数据
+                //            cypressBytesList.GetRange(framePosition, frameHeadLength).CopyTo(frameBytes);
+                //            frameBytesCount += frameHeadLength;
+                //            //复制帧数据
+                //            foreach (var lineData in frame.GetFrameData().LineList)
+                //            {
+                //                try
+                //                {
+                //                    //复制行头
+                //                    Array.Copy(lineData.Head, 0, frameBytes, frameBytesCount, lineData.Head.Length);
+                //                    frameBytesCount += lineData.Head.Length;
+                //                    //复制数据
+                //                    Array.Copy(lineData.Data, 0, frameBytes, frameBytesCount, lineData.Data.Length);
+                //                    frameBytesCount += lineData.Data.Length;
+                //                    //复制行尾
+                //                    Array.Copy(lineData.End, 0, frameBytes, frameBytesCount, lineData.End.Length);
+                //                    frameBytesCount += lineData.End.Length;
+                //                }
+                //                catch (Exception e)
+                //                {
+
+                //                    MessageBox.Show(e.StackTrace, "Exception '" + e.Message + "' thrown by " + e.Source);
+                //                }
+
+                //            }
+
+
+                //            //for (int i = 0; i < imagesList.Count; i++)
+                //            //{
+                //            //    imagesList[i].Image.CopyTo(frameArray, frameArrayCount);
+                //            //    frameArrayCount += imagesList[i].Image.Length;
+                //            //}
+
+                //            Log frameLog = new Log(direcorty, time + "_" + frameHead.GetFrameNo() + ".raw", false, false, null);
+                //            try
+                //            {
+                //                frameLog.Write(frameBytes, 0, frameBytes.Length);
+                //                frameLog.CloseStream();
+                //            }
+                //            catch (Exception e)
+                //            {
+                //                MessageBox.Show(e.StackTrace, "Exception '" + e.Message + "' thrown by " + e.Source);
+                //            }
+                //        }
+
+                //        //保存Crc信息
+                //        Log crcLog = new Log(direcorty, time + "_" + frameHead.GetFrameNo() + "_crcResult" + ".txt", true, true, Encoding.Unicode);
+                //        try
+                //        {
+                //            crcLog.WriteLine("该帧检测结果: " + imageCrcResult);
+
+                //            LineData headLine = frameHead.LineData;
+                //            crcLog.WriteLine(headLine.ToString());
+
+                //            List<LineData> lineList = frame.GetFrameData().LineList;
+                //            for (int i = 0; i < lineList.Count; i++)
+                //            {
+                //                crcLog.WriteLine(lineList[i].ToString());
+                //            }
+                //            crcLog.CloseStream();
+                //        }
+                //        catch (Exception e)
+                //        {
+
+                //            MessageBox.Show(e.StackTrace, "Exception '" + e.Message + "' thrown by " + e.Source);
+                //        }
+                //    }
+                //    isFindFrame = false;
+                //    isParseHead = false;
+                //    cypressBytesList.RemoveRange(0, framePosition + frameLength);
+                //    frame.GetFrameData().ClearList();
+                //}
+                copyEvent.Set();
+            }
+        }
+
+        private void DivideFrame(List<byte> source, Frame []frameArray)
+        {
+            if (source == null || source.Count == 0
+                || frameArray == null || frameArray.Length != 2)
+            {
+                return;
+            }
+
+            string [] cameraIdentify = configure.CameraIdentify.Split(',');
+            if(cameraIdentify.Length != 2)
+                return;
+            int lineHeadLen = configure.LineHeadLen;
+            int lineEndLen = configure.LineEndLen;
+            int pixelByteLen = configure.Width * configure.Bits / 8;
+            int lineLength = lineHeadLen + configure.LineEndLen + pixelByteLen;
+            int cameraIdentifyLen = configure.CameraIdentifyLen;
+            //string redLineStart = configure.LineIndentify + cameraIdentify[0];
+            //string blueLineStart = configure.LineIndentify + cameraIdentify[1];
+            while (source.Count >= lineLength)
+            {
+                int linePosition = MyString.IndexOfHexHead(source, configure.LineIdentify);
+                if (linePosition == -1)//未找到行头
+                {
+                    source.Clear();
+                    return;
+                }
+                else if(linePosition != 0)
+                {
+                    source.RemoveRange(0, linePosition);
+                }
+                else//找到行头标识，判断相机标识是否正确，若正确，则找到行头
+                {
+                    //行头位置为0,判断相机标识是否正确
+                    int lineIdentifyLen = configure.LineIdentifyLen;
+                    byte []cameraArray = new byte[cameraIdentifyLen];
+                    for (int i = 0; i < cameraArray.Length; i++)
+                    {
+                        cameraArray[i] = source[lineIdentifyLen + i];
+                    }
+                    string cameraStr = MyConvert.GetStrFromHexBytes(cameraArray).ToLower();
+                    //相机标识正确
+                    if (cameraStr == cameraIdentify[0] || cameraStr == cameraIdentify[1])
+                    {
+                        LineData lineData = new LineData();
+                        //获取一行数据，通过行数据解析出行头，数据和行尾，把解析出的数据结构
+                        //存放在列表中
+                        List<byte> subList = source.GetRange(0, lineLength);
+                        lineData.Head = subList.GetRange(0, lineHeadLen).ToArray();
+                        lineData.Data = subList.GetRange(lineHeadLen, pixelByteLen).ToArray();
+                        byte[] lineNum = new byte[lineHeadLen - lineIdentifyLen - cameraIdentifyLen];//行号
+                        //已找到行头，相机标识，若行号为0，则找到帧头，解析帧头，获取新的图像高度和宽度
+                        Array.Copy(lineData.Head, lineIdentifyLen + cameraIdentifyLen,
+                            lineNum, 0, lineNum.Length);
+                        bool isFirstLine = true;
+                        for (int i = 0; i < lineNum.Length; i++)
+                        {
+                            if (lineNum[i] != 0)
+                            {
+                                isFirstLine = false;
+                            }
+
+                        }
+                        //第一行，包含帧头信息，更新图像大小
+                        if (isFirstLine)
+                        {
+                            ((TCFrame)frameArray[0]).ParseImageSize(lineData.Data);
+                            pixelByteLen = configure.Width * configure.Bits / 8;
+                            lineLength = lineHeadLen + configure.LineEndLen + pixelByteLen;
+                            if (source.Count < lineLength)
+                            {
+                                continue;
+                            }
+                        }
+                        //图像宽度和高度已更新,重新获取行数据
+                        if (isFirstLine)
+                        {
+                            subList = source.GetRange(0, lineLength);
+                            lineData.Head = subList.GetRange(0, lineHeadLen).ToArray();
+                            lineData.Data = subList.GetRange(lineHeadLen, pixelByteLen).ToArray();  
+                        }
+                        
+                        lineData.End = subList.GetRange(lineHeadLen + pixelByteLen, lineEndLen).ToArray();
+
+                        if (!isFirstLine && configure.Bits == 16)
+                        {
+                            //lineData.Head = MyConvert.BigLittleEndianConvert(lineData.Head);
+                            lineData.Data = MyConvert.BigLittleEndianConvert(lineData.Data);
+                            //lineData.End = MyConvert.BigLittleEndianConvert(lineData.End);
+                        }
+
+                        lineData.CrcResult = CRCITU.RunCRC16(subList.ToArray()) == 0;
+
+                        if (cameraStr == cameraIdentify[0]) //红波段
+                        {
+                            if (frameArray[0].LineList != null)
+                            {
+                                frameArray[0].LineList.Add(lineData);
+                            }
+                            
+                        }
+                        else if (cameraStr == cameraIdentify[1])//蓝波段
+                        {
+                            if (frameArray[1].LineList != null)
+                            {
+                                frameArray[1].LineList.Add(lineData);
+                            }
+                        }
+                        source.RemoveRange(0, lineLength);
+                        
+                    }
+                    else// 行头标识后面没有跟相机标识符因此不是行头
+                    {
+                        source.RemoveRange(0, lineIdentifyLen);
+                    }
+                }
+            }
+        }
+
+        
+    }
+}
