@@ -9,7 +9,7 @@ An implementation of the training pipeline of AlphaZero for Gomoku
 from __future__ import print_function
 import random
 import numpy as np
-from collections import defaultdict, deque
+from collections import deque
 from game import Board, Game
 from mcts_alpha_zero import MCTSPlayer
 from policy_value_net import PolicyValueNet # Tensorflow
@@ -35,7 +35,7 @@ class TrainPipeline():
 		self.n_playout = 400  # num of simulations for each move
 		self.c_puct = 5
 		self.buffer_size = 10000
-		self.batch_size = 512  # mini-batch size for training
+		self.batch_size = 4 #512  # mini-batch size for training
 		self.data_buffer = deque(maxlen=self.buffer_size)
 		self.play_batch_size = 1
 		self.epochs = 5  # num of train_steps for each update
@@ -161,7 +161,7 @@ class TrainPipeline():
 			if len(self.data_buffer) > self.batch_size:
 				loss, entropy = self.policy_update()
 
-		self.policy_value_net.save_model('./current_policy.model')
+		self.policy_value_net.save_model('current_policy.model')
 
 if __name__ == '__main__':
 	training_pipeline = TrainPipeline()
