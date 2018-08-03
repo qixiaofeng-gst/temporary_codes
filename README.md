@@ -8,10 +8,6 @@ References:
 ### Update 2018.2.24: supports training with TensorFlow!
 ### Update 2018.1.17: supports training with PyTorch!
 
-### Example Games Between Trained Models
-- Each move with 400 MCTS playouts:  
-![playout400](https://raw.githubusercontent.com/junxiaosong/AlphaZero_Gomoku/master/playout400.gif)
-
 ### Requirements
 To play with the trained AI models, only need:
 - Python >= 2.7
@@ -40,25 +36,10 @@ To train the AI model from scratch, with Theano and Lasagne, directly run:
 ```
 python train.py
 ```
-With PyTorch or TensorFlow, first modify the file [train.py](https://github.com/junxiaosong/AlphaZero_Gomoku/blob/master/train.py), i.e., comment the line
-```
-from policy_value_net import PolicyValueNet  # Theano and Lasagne
-```
-and uncomment the line 
-```
-# from policy_value_net_pytorch import PolicyValueNet  # Pytorch
-or
-# from policy_value_net_tensorflow import PolicyValueNet # Tensorflow
-```
-and then execute: ``python train.py``  (To use GPU in PyTorch, set ``use_gpu=True``)
-
-The models (best_policy.model and current_policy.model) will be saved every a few updates (default 50).  
-
-**Note:** the 4 provided models were trained using Theano/Lasagne, to use them with PyTorch, please refer to [issue 5](https://github.com/junxiaosong/AlphaZero_Gomoku/issues/5).
 
 **Tips for training:**
 1. It is good to start with a 6 * 6 board and 4 in a row. For this case, we may obtain a reasonably good model within 500~1000 self-play games in about 2 hours.
 2. For the case of 8 * 8 board and 5 in a row, it may need 2000~3000 self-play games to get a good model, and it may take about 2 days on a single PC.
 
 ### Further reading
-My article describing some details about the implementation in Chinese: [https://zhuanlan.zhihu.com/p/32089487](https://zhuanlan.zhihu.com/p/32089487) 
+An article describing some details about the implementation in Chinese: [https://zhuanlan.zhihu.com/p/32089487](https://zhuanlan.zhihu.com/p/32089487) 
