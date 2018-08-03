@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/user/bin/env python
+# coding=<utf-8>
 """
 human VS AI models
 Input your move in the format: 2,3
@@ -7,24 +8,24 @@ Input your move in the format: 2,3
 """
 
 from __future__ import print_function
-import pickle
 from game import Board, Game
-from mcts_pure import MCTSPlayer as MCTS_Pure
-from mcts_alphaZero import MCTSPlayer
-from policy_value_net_tensorflow import PolicyValueNet
+from mcts_alpha_zero import MCTSPlayer
+from policy_value_net import PolicyValueNet
+
+from tkinter import messagebox
 
 import tkinter as tk
-from tkinter import messagebox
 import threading
 
 mouse_click = '<Button-1>'
+cell_size = 50
 gui_cells = []
 
 class GuiCell(object):
 	def __init__(self, board_gui, board_mod, players, position):
 		self.mami = tk.Frame(
 			board_gui, bg='gray', bd=2,
-			relief=tk.RIDGE, width=46, height=46
+			relief=tk.RIDGE, width=cell_size, height=cell_size
 		)
 		self.mami.bind(mouse_click, self.on_click)
 		x, y = position
@@ -69,30 +70,28 @@ def put_piece(position):
 
 def run():
 	width, height, n = 6, 6, 4
-	try:
-		board = Board(width=width, height=height, n_in_row=n)
-		best_policy = PolicyValueNet(width, height, 'models/best_policy.model')
-		# Below set larger n_playout for better performance
-		mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
-		board.init_board(0)
-		p1, p2 = board.players
-		human.set_player_ind(p1)
-		mcts_player.set_player_ind(p2)
-		players = {p1: human, p2: mcts_player}
-		
-		app_tk = tk.Tk()
-		app_tk.resizable(False, False)
-		app_tk.geometry('750x750+50+50')
-		app_tk.title('Human VS AI - Gomoku')
-		for x in range(width):
-			cells_column = []
-			gui_cells.append(cells_column)
-			for y in range(height):
-				cells_column.append(GuiCell(app_tk, board, players, (x, y)))
+	board = Board(width=width, height=height, n_in_row=n)
+	best_policy = PolicyValueNet(width, height, 'models/best_policy.model')
+	# Below set larger n_playout for better performance
+	mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
+	board.init_board(0)
+	p1, p2 = board.players
+	mcts_player.set_player_ind(p2)
+	players = {p1: 'Human Player', p2: mcts_player}
+	
+	app_tk = tk.Tk()
+	app_tk.resizable(False, False)
+	app_tk.geometry('{}x{}+{}+{}'.format(
+		cell_size * width, cell_size * height, cell_size, cell_size
+	))
+	app_tk.title('Human VS AI - Gomoku')
+	for x in range(width):
+		cells_column = []
+		gui_cells.append(cells_column)
+		for y in range(height):
+			cells_column.append(GuiCell(app_tk, board, players, (x, y)))
 
-		app_tk.mainloop()
-	except KeyboardInterrupt:
-		print('\n\rquit')
+	app_tk.mainloop()
 
 if __name__ == '__main__':
   run()
