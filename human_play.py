@@ -20,6 +20,7 @@ import threading
 mouse_click = '<Button-1>'
 cell_size = 50
 gui_cells = []
+is_opponent_turn = False
 
 class GuiCell(object):
 	def __init__(self, board_gui, board_mod, players, position):
@@ -42,6 +43,10 @@ class GuiCell(object):
 		self.mami.unbind(mouse_click)
 	
 	def on_click(self, event):
+		global is_opponent_turn
+		if is_opponent_turn:
+			messagebox.showinfo('Be patient', 'Plz wait for AI\'s turn end.')
+			return
 		self.put_piece()
 		move = self.board_mod.location_to_move(list(self.position))
 		self.board_mod.do_move(move)
@@ -49,29 +54,40 @@ class GuiCell(object):
 		if end:
 			messagebox.showinfo('Congratulations', 'You win!')
 			self.board_gui.title('You win.')
+			end_game()
 			return
 		def opponent_move():
+			global is_opponent_turn
 			opponent = self.players[self.board_mod.get_current_player()]
 			o_move = opponent.get_action(self.board_mod)
 			put_piece((o_move // self.board_mod.width, o_move % self.board_mod.width))
 			self.board_mod.do_move(o_move)
 			end, winner = self.board_mod.game_end()
 			self.board_gui.title('Your turn.')
+			is_opponent_turn = False
 			if end:
 				messagebox.showinfo('Notification', 'You lose.')
 				self.board_gui.title('You lose.')
+				end_game()
 		t = threading.Thread(target=opponent_move)
 		t.start()
+		is_opponent_turn = True
 		self.board_gui.title('Opponent turn. Waiting...')
 
 def put_piece(position):
 	x, y = position
 	gui_cells[x][y].put_piece()
 
+def end_game():
+	for cs in gui_cells:
+		for c in cs:
+			c.mami.unbind(mouse_click)
+	print('Game End.')
+
 def run():
 	width, height, n = 6, 6, 4
 	board = Board(width=width, height=height, n_in_row=n)
-	best_policy = PolicyValueNet(width, height, 'models/best_policy.model')
+	best_policy = PolicyValueNet(width, height, 'current_policy.model')
 	# Below set larger n_playout for better performance
 	mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
 	board.init_board(0)
