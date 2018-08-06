@@ -13,18 +13,17 @@ from collections import deque
 from game import Board, Game
 from mcts_alpha_zero import MCTSPlayer
 from policy_value_net import PolicyValueNet # Tensorflow
+from datetime import datetime
 
 game_batch_num = 1 #1500
 
 class TrainPipeline():
 	def __init__(self, init_model=None):
 		# params of the board and the game
-		self.board_width = 6
-		self.board_height = 6
+		self.board_size = 6
 		self.n_in_row = 4
 		self.board = Board(
-			width=self.board_width,
-			height=self.board_height,
+			size=self.board_size,
 			n_in_row=self.n_in_row
 		)
 		self.game = Game(self.board)
@@ -45,17 +44,9 @@ class TrainPipeline():
 		# num of simulations used for the pure mcts, which is used as
 		# the opponent to evaluate the trained policy
 		self.pure_mcts_playout_num = 1000
-		if init_model:
-			# start training from an initial policy-value net
-			self.policy_value_net = PolicyValueNet(
-				self.board_width, self.board_height,
-				model_file=init_model
-			)
-		else:
-			# start training from a new policy-value net
-			self.policy_value_net = PolicyValueNet(
-				self.board_width, self.board_height
-			)
+		self.policy_value_net = PolicyValueNet(
+			self.board_size, model_file=init_model
+		)
 		self.mcts_player = MCTSPlayer(
 			self.policy_value_net.policy_value_fn,
 			c_puct=self.c_puct,
@@ -73,7 +64,7 @@ class TrainPipeline():
 				# rotate counterclockwise
 				equi_state = np.array([np.rot90(s, i) for s in state])
 				equi_mcts_prob = np.rot90(np.flipud(mcts_porb.reshape(
-						self.board_height, self.board_width
+						self.board_size, self.board_size
 				)), i)
 				extend_data.append((
 					equi_state, np.flipud(equi_mcts_prob).flatten(), winner
@@ -82,9 +73,7 @@ class TrainPipeline():
 				equi_state = np.array([np.fliplr(s) for s in equi_state])
 				equi_mcts_prob = np.fliplr(equi_mcts_prob)
 				extend_data.append((
-					equi_state,
-					np.flipud(equi_mcts_prob).flatten(),
-					winner
+					equi_state, np.flipud(equi_mcts_prob).flatten(), winner
 				))
 		return extend_data
 
@@ -93,7 +82,8 @@ class TrainPipeline():
 		for i in range(n_games):
 			winner, play_data = self.game.start_self_play(
 				self.mcts_player,
-				temp = self.temp
+				temp = self.temp,
+				is_shown = 1
 			)
 			play_data = list(play_data)[:]
 			self.episode_len = len(play_data)
@@ -155,14 +145,18 @@ class TrainPipeline():
 		"""run the training pipeline"""
 		global game_batch_num
 		
+		ts = datetime.now().timestamp()
 		for i in range(game_batch_num):
 			self.collect_selfplay_data(self.play_batch_size)
 			print("batch i:{}, episode_len:{}".format(i+1, self.episode_len))
 			if len(self.data_buffer) > self.batch_size:
 				loss, entropy = self.policy_update()
 
-		self.policy_value_net.save_model('current_policy.model')
+		self.policy_value_net.save_model('./current_policy.model')
+		print('Cost {} seconds to update policy value net.'.format(datetime.now().timestamp() - ts))
 
 if __name__ == '__main__':
-	training_pipeline = TrainPipeline()
+	ts = datetime.now().timestamp()
+	training_pipeline = TrainPipeline('current_policy.model')
 	training_pipeline.run()
+	print('Totally cost {} seconds to train.'.format(datetime.now().timestamp() - ts))

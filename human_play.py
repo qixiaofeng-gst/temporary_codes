@@ -60,7 +60,7 @@ class GuiCell(object):
 			global is_opponent_turn
 			opponent = self.players[self.board_mod.get_current_player()]
 			o_move = opponent.get_action(self.board_mod)
-			put_piece((o_move // self.board_mod.width, o_move % self.board_mod.width))
+			put_piece((o_move // self.board_mod.size, o_move % self.board_mod.size))
 			self.board_mod.do_move(o_move)
 			end, winner = self.board_mod.game_end()
 			self.board_gui.title('Your turn.')
@@ -85,9 +85,9 @@ def end_game():
 	print('Game End.')
 
 def run():
-	width, height, n = 6, 6, 4
-	board = Board(width=width, height=height, n_in_row=n)
-	best_policy = PolicyValueNet(width, height, 'current_policy.model')
+	size, n = 6, 4
+	board = Board(size=size, n_in_row=n)
+	best_policy = PolicyValueNet(size, 'current_policy.model')
 	# Below set larger n_playout for better performance
 	mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
 	board.init_board(0)
@@ -98,13 +98,13 @@ def run():
 	app_tk = tk.Tk()
 	app_tk.resizable(False, False)
 	app_tk.geometry('{}x{}+{}+{}'.format(
-		cell_size * width, cell_size * height, cell_size, cell_size
+		cell_size * size, cell_size * size, cell_size, cell_size
 	))
 	app_tk.title('Human VS AI - Gomoku')
-	for x in range(width):
+	for x in range(size):
 		cells_column = []
 		gui_cells.append(cells_column)
-		for y in range(height):
+		for y in range(size):
 			cells_column.append(GuiCell(app_tk, board, players, (x, y)))
 
 	app_tk.mainloop()

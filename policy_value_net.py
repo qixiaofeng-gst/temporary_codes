@@ -10,14 +10,13 @@ import numpy as np
 import tensorflow as tf
 
 class PolicyValueNet():
-	def __init__(self, board_width, board_height, model_file=None):
-			self.board_width = board_width
-			self.board_height = board_height
+	def __init__(self, board_size, model_file=None):
+			self.board_size = board_size
 
 			# Define the tensorflow neural network
 			# 1. Input:
 			self.input_states = tf.placeholder(
-				tf.float32, shape=[None, 4, board_height, board_width]
+				tf.float32, shape=[None, 4, board_size, board_size]
 			)
 			self.input_state = tf.transpose(self.input_states, [0, 2, 3, 1])
 			# 2. Common Networks Layers
@@ -40,13 +39,13 @@ class PolicyValueNet():
 			)
 			# Flatten the tensor
 			self.action_conv_flat = tf.reshape(
-				self.action_conv, [-1, 4 * board_height * board_width]
+				self.action_conv, [-1, 4 * board_size * board_size]
 			)
 			# 3-2 Full connected layer, the output is the log probability of moves
 			# on each slot on the board
 			self.action_fc = tf.layers.dense(
 				inputs=self.action_conv_flat,
-				units=board_height * board_width,
+				units=board_size * board_size,
 				activation=tf.nn.log_softmax
 			)
 			# 4 Evaluation Networks
@@ -55,7 +54,7 @@ class PolicyValueNet():
 				padding="same", data_format="channels_last", activation=tf.nn.relu
 			)
 			self.evaluation_conv_flat = tf.reshape(
-				self.evaluation_conv, [-1, 2 * board_height * board_width]
+				self.evaluation_conv, [-1, 2 * board_size * board_size]
 			)
 			self.evaluation_fc1 = tf.layers.dense(
 				inputs=self.evaluation_conv_flat, units=64, activation=tf.nn.relu
@@ -76,7 +75,7 @@ class PolicyValueNet():
 			)
 			# 3-2. Policy Loss function
 			self.mcts_probs = tf.placeholder(
-				tf.float32, shape=[None, board_height * board_width]
+				tf.float32, shape=[None, board_size * board_size]
 			)
 			self.policy_loss = tf.negative(tf.reduce_mean(
 				tf.reduce_sum(tf.multiply(self.mcts_probs, self.action_fc), 1)
@@ -132,7 +131,7 @@ class PolicyValueNet():
 			legal_positions = board.availables
 			current_state = np.ascontiguousarray(
 				board.current_state().reshape(
-					-1, 4, self.board_width, self.board_height
+					-1, 4, self.board_size, self.board_size
 				)
 			)
 			act_probs, value = self.policy_value(current_state)
