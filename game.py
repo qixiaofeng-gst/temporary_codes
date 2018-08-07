@@ -37,9 +37,9 @@ class Board(object):
 		xs = np.full(self.size, x0)
 		ys = np.full(self.size, y0)
 		left = range(x0 - 1, -1, -1)
-		right = range(x0, self.size)
+		right = range(x0 + 1, self.size)
 		up = range(y0 - 1, -1, -1)
-		down = range(y0, self.size)
+		down = range(y0 + 1, self.size)
 		
 		def count_(arr_x, arr_y):
 			count = 0
@@ -50,11 +50,12 @@ class Board(object):
 					return count
 			return count
 	
+		expected = (self.n_in_row - 1)
 		if (
-			self.n_in_row == (count_(left, ys) + count_(right, ys)) or
-			self.n_in_row == (count_(xs, up) + count_(xs, down)) or
-			self.n_in_row == (count_(left, down) + count_(right, up)) or
-			self.n_in_row == (count_(left, up) + count_(right, down))
+			expected == (count_(left, ys) + count_(right, ys)) or
+			expected == (count_(xs, up) + count_(xs, down)) or
+			expected == (count_(left, down) + count_(right, up)) or
+			expected == (count_(left, up) + count_(right, down))
 		):
 			self._winner = checking_player
 
@@ -106,32 +107,8 @@ class Board(object):
 		self.last_move = move
 
 	def has_a_winner(self):
-		size = self.size
-		states = self.states
-		n = self.n_in_row
-
-		moved = list(set(range(size * size)) - set(self.availables))
-		if len(moved) < self.n_in_row + 2:
-				return False, -1
-
-		for m in moved:
-			h = m // size
-			w = m % size
-			player = states[m]
-
-			if (w in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
-				return True, player
-
-			if (h in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n * size, size))) == 1):
-				return True, player
-
-			if (w in range(size - n + 1) and h in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n * (size + 1), size + 1))) == 1):
-				return True, player
-
-			if (w in range(n - 1, size) and h in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n * (size - 1), size - 1))) == 1):
-				return True, player
-
-		return False, -1
+		no_winner = (invalid_player == self._winner)
+		return False == no_winner, self._winner
 
 	def game_end(self):
 		"""Check whether the game is ended or not"""
