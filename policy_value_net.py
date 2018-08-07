@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 An implementation of the policyValueNet in Tensorflow
 Tested in Tensorflow 1.4 and 1.5
 
 @author: Xiang Zhong
-"""
+'''
 
 import numpy as np
 import tensorflow as tf
@@ -113,10 +113,10 @@ class PolicyValueNet():
 			self.restore_model(model_file)
 
 	def policy_value(self, state_batch):
-		"""
+		'''
 		input: a batch of states
 		output: a batch of action probabilities and state values
-		"""
+		'''
 		log_act_probs, value = self.session.run(
 			[self.action_fc, self.evaluation_fc2],
 			feed_dict={self.input_states: state_batch}
@@ -125,11 +125,11 @@ class PolicyValueNet():
 		return act_probs, value
 
 	def policy_value_fn(self, board):
-		"""
+		'''
 		input: board
 		output: a list of (action, probability) tuples for each available
 		action and the score of the board state
-		"""
+		'''
 		legal_positions = board.availables
 		current_state = np.ascontiguousarray(
 			board.current_state().reshape(
@@ -141,7 +141,7 @@ class PolicyValueNet():
 		return act_probs, value
 
 	def train_step(self, state_batch, mcts_probs, winner_batch, lr):
-		"""perform a training step"""
+		'''perform a training step'''
 		winner_batch = np.reshape(winner_batch, (-1, 1))
 		loss, entropy, _ = self.session.run(
 			[self.loss, self.entropy, self.optimizer],

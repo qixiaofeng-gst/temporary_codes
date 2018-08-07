@@ -1,10 +1,10 @@
 #!/user/bin/env python
 # coding=<utf-8>
-"""
+'''
 An implementation of the training pipeline of AlphaZero for Gomoku
 
 @author: Junxiao Song
-"""
+'''
 
 from __future__ import print_function
 import random
@@ -14,26 +14,27 @@ from game import Board, Game
 from mcts_alpha_zero import MCTSPlayer
 from policy_value_net import PolicyValueNet # Tensorflow
 from datetime import datetime
+import argparse
 
 model_path = 'models/3000+/current_policy.model'
 game_batch_num = 1 #1500 # takes about 6 hours to train.
+board_size = 6
+n_in_row = 4
+c_puct = 5
+n_playout = 400  # num of simulations for each move
+temperature = 1.0  # the temperature param
 
 class TrainPipeline():
 	def __init__(self, init_model=None):
 		# params of the board and the game
-		self.board_size = 6
-		self.n_in_row = 4
 		self.board = Board(
-			size=self.board_size,
-			n_in_row=self.n_in_row
+			size=board_size,
+			n_in_row=n_in_row
 		)
 		self.game = Game(self.board)
 		# training params
 		self.learn_rate = 2e-3
 		self.lr_multiplier = 1.0  # adaptively adjust the learning rate based on KL
-		self.temp = 1.0  # the temperature param
-		self.n_playout = 400  # num of simulations for each move
-		self.c_puct = 5
 		self.buffer_size = 10000
 		self.batch_size = 512  # mini-batch size for training
 		self.data_buffer = deque(maxlen=self.buffer_size)
@@ -46,26 +47,26 @@ class TrainPipeline():
 		# the opponent to evaluate the trained policy
 		self.pure_mcts_playout_num = 1000
 		self.policy_value_net = PolicyValueNet(
-			self.board_size, model_file=init_model
+			board_size, model_file=init_model
 		)
 		self.mcts_player = MCTSPlayer(
 			self.policy_value_net.policy_value_fn,
-			c_puct=self.c_puct,
-			n_playout=self.n_playout,
+			c_puct=c_puct,
+			n_playout=n_playout,
 			is_selfplay=1
 		)
 
 	def get_equi_data(self, play_data):
-		"""augment the data set by rotation and flipping
+		'''augment the data set by rotation and flipping
 		play_data: [(state, mcts_prob, winner_z), ..., ...]
-		"""
+		'''
 		extend_data = []
 		for state, mcts_porb, winner in play_data:
 			for i in [1, 2, 3, 4]:
 				# rotate counterclockwise
 				equi_state = np.array([np.rot90(s, i) for s in state])
 				equi_mcts_prob = np.rot90(np.flipud(mcts_porb.reshape(
-						self.board_size, self.board_size
+						board_size, board_size
 				)), i)
 				extend_data.append((
 					equi_state, np.flipud(equi_mcts_prob).flatten(), winner
@@ -79,12 +80,12 @@ class TrainPipeline():
 		return extend_data
 
 	def collect_selfplay_data(self, n_games=1):
-		"""collect self-play data for training"""
+		'''collect self-play data for training'''
 		for i in range(n_games):
 			ts = datetime.now().timestamp()
 			winner, play_data = self.game.start_self_play(
 				self.mcts_player,
-				temp = self.temp,
+				temp = temperature,
 				is_shown = 0
 			)
 			print('A self play cost {} seconds.'.format(datetime.now().timestamp() - ts))
@@ -95,7 +96,7 @@ class TrainPipeline():
 			self.data_buffer.extend(play_data)
 
 	def policy_update(self):
-		"""update the policy-value net"""
+		'''update the policy-value net'''
 		mini_batch = random.sample(self.data_buffer, self.batch_size)
 		state_batch = [data[0] for data in mini_batch]
 		mcts_probs_batch = [data[1] for data in mini_batch]
@@ -145,7 +146,7 @@ class TrainPipeline():
 		return loss, entropy
 
 	def run(self):
-		"""run the training pipeline"""
+		'''run the training pipeline'''
 		global game_batch_num
 		
 		ts = datetime.now().timestamp()
@@ -158,8 +159,48 @@ class TrainPipeline():
 		self.policy_value_net.save_model(model_path)
 		print('Cost {} seconds to update policy value net.'.format(datetime.now().timestamp() - ts))
 
+def test_(model_1, model_2):
+	pvn_1 = PolicyValueNet(
+		board_size, model_file = model_1
+	)
+	player_1 = MCTSPlayer(
+		pvn_1.policy_value_fn,
+		c_puct = c_puct,
+		n_playout = n_playout,
+		is_selfplay = 0
+	)
+	pvn_2 = PolicyValueNet(
+		board_size, model_file = model_2
+	)
+	player_2 = MCTSPlayer(
+		pvn_2.policy_value_fn,
+		c_puct = c_puct,
+		n_playout = n_playout,
+		is_selfplay = 0
+	)
+	board = Board(size = board_size, n_in_row = n_in_row)
+	board.init_board()
+	p1, p2 = board.players
+	players = { p1: player_1, p2: player_2 }
+	while True:
+		current_player = players[board.get_current_player()]
+		board.do_move(current_player.get_action(board, temp = temperature))
+		end, winner = board.game_end()
+		if end:
+			return winner
+
 if __name__ == '__main__':
-	ts = datetime.now().timestamp()
-	training_pipeline = TrainPipeline(model_path)
-	training_pipeline.run()
-	print('Totally cost {} seconds to train.'.format(datetime.now().timestamp() - ts))
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-t', action = 'store_true', help = 'Determine if use test mode.')
+	parser.add_argument('-p1', type = str, default = 'models/current_policy.model', help = 'First players model path.')
+	parser.add_argument('-p2', type = str, default = model_path, help = 'Second players model path.')
+	args = parser.parse_args()
+	if args.t:
+		ts = datetime.now().timestamp()
+		test_(args.p1, args.p2)
+		print('Totally cost {} seconds to test.'.format(datetime.now().timestamp() - ts))
+	else:
+		ts = datetime.now().timestamp()
+		training_pipeline = TrainPipeline(model_path)
+		training_pipeline.run()
+		print('Totally cost {} seconds to train.'.format(datetime.now().timestamp() - ts))

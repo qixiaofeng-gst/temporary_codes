@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
+'''
 @author: Junxiao Song
-"""
+'''
 
 from __future__ import print_function
 import numpy as np
@@ -9,7 +9,7 @@ import numpy as np
 invalid_player = -1
 
 class Board(object):
-	"""board for the game"""
+	'''board for the game'''
 
 	def __init__(self, **kwargs):
 		self.size = int(kwargs.get('size', 8))
@@ -59,6 +59,10 @@ class Board(object):
 		):
 			self._winner = checking_player
 
+	def _has_a_winner(self):
+		no_winner = (invalid_player == self._winner)
+		return False == no_winner, self._winner
+
 	def init_board(self, start_player=0):
 		if self.size < self.n_in_row:
 			raise Exception('board size can not be less than {}'.format(self.n_in_row))
@@ -79,9 +83,9 @@ class Board(object):
 		return move
 
 	def current_state(self):
-		"""return the board state from the perspective of the current player.
+		'''return the board state from the perspective of the current player.
 		state shape: 4*size*size
-		"""
+		'''
 
 		square_state = np.zeros((4, self.size, self.size))
 		if self.states:
@@ -106,13 +110,9 @@ class Board(object):
 		)
 		self.last_move = move
 
-	def has_a_winner(self):
-		no_winner = (invalid_player == self._winner)
-		return False == no_winner, self._winner
-
 	def game_end(self):
-		"""Check whether the game is ended or not"""
-		win, winner = self.has_a_winner()
+		'''Check whether the game is ended or not'''
+		win, winner = self._has_a_winner()
 		if win:
 			return True, winner
 		elif 0 == len(self.availables):
@@ -123,40 +123,16 @@ class Board(object):
 		return self.current_player
 
 class Game(object):
-	"""game server"""
+	'''game server'''
 
 	def __init__(self, board, **kwargs):
 		self.board = board
 
-	def graphic(self, board, player1, player2):
-		"""Draw the board and show game info"""
-		size = board.size
-
-		print("Player", player1, "with X".rjust(3))
-		print("Player", player2, "with O".rjust(3))
-		print()
-		for x in range(size):
-			print("{0:8}".format(x), end='')
-		print('\r\n')
-		for i in range(size - 1, -1, -1):
-			print("{0:4d}".format(i), end='')
-			for j in range(size):
-				loc = i * size + j
-				p = board.states.get(loc, -1)
-				if p == player1:
-					print('X'.center(8), end='')
-				elif p == player2:
-					print('O'.center(8), end='')
-				else:
-					print('_'.center(8), end='')
-			print('\r\n\r\n')
-
 	def start_self_play(self, player, is_shown=0, temp=1e-3):
-		""" start a self-play game using a MCTS player, reuse the search tree,
+		''' start a self-play game using a MCTS player, reuse the search tree,
 		and store the self-play data: (state, mcts_probs, z) for training
-		"""
+		'''
 		self.board.init_board()
-		p1, p2 = self.board.players
 		states, mcts_probs, current_players = [], [], []
 		while True:
 			move, move_probs = player.get_action(
@@ -168,8 +144,6 @@ class Game(object):
 			current_players.append(self.board.current_player)
 			# perform a move
 			self.board.do_move(move)
-			if is_shown:
-				self.graphic(self.board, p1, p2)
 			end, winner = self.board.game_end()
 			if end:
 				# winner from the perspective of the current player of each state
