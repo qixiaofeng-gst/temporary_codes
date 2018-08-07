@@ -169,7 +169,7 @@ class Game(object):
 					winners_z[np.array(current_players) == winner] = 1.0
 					winners_z[np.array(current_players) != winner] = -1.0
 				# reset MCTS root node
-				player.reset_player()
+				player.reset_player() # Must reset, or the trained AI will be very stupid.
 				if is_shown:
 					if winner != -1:
 						print("Game end. Winner is player:", winner)

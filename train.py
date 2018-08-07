@@ -15,7 +15,7 @@ from mcts_alpha_zero import MCTSPlayer
 from policy_value_net import PolicyValueNet # Tensorflow
 from datetime import datetime
 
-game_batch_num = 1 #1500
+game_batch_num = 1 #1500 # takes about 6 hours to train.
 
 class TrainPipeline():
 	def __init__(self, init_model=None):
@@ -34,7 +34,7 @@ class TrainPipeline():
 		self.n_playout = 400  # num of simulations for each move
 		self.c_puct = 5
 		self.buffer_size = 10000
-		self.batch_size = 4 #512  # mini-batch size for training
+		self.batch_size = 512  # mini-batch size for training
 		self.data_buffer = deque(maxlen=self.buffer_size)
 		self.play_batch_size = 1
 		self.epochs = 5  # num of train_steps for each update
@@ -152,11 +152,11 @@ class TrainPipeline():
 			if len(self.data_buffer) > self.batch_size:
 				loss, entropy = self.policy_update()
 
-		self.policy_value_net.save_model('./current_policy.model')
+		self.policy_value_net.save_model('models/3000+/current_policy.model')
 		print('Cost {} seconds to update policy value net.'.format(datetime.now().timestamp() - ts))
 
 if __name__ == '__main__':
 	ts = datetime.now().timestamp()
-	training_pipeline = TrainPipeline('current_policy.model')
+	training_pipeline = TrainPipeline('models/3000+/current_policy.model')
 	training_pipeline.run()
 	print('Totally cost {} seconds to train.'.format(datetime.now().timestamp() - ts))
