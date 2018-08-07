@@ -6,6 +6,8 @@
 from __future__ import print_function
 import numpy as np
 
+invalid_player = -1
+
 class Board(object):
 	"""board for the game"""
 
@@ -19,99 +21,129 @@ class Board(object):
 		self.n_in_row = int(kwargs.get('n_in_row', 5))
 		self.players = [1, 2]  # player1 and player2
 		self.current_player = 1
+		self._winner = invalid_player
+	
+	def _check_if_win(self, move):
+		min_count = 2 * self.n_in_row - 1
+		if min_count > len(self.states):
+			return
+		
+		checking_player = self.states.get(move, invalid_player)
+		if invalid_player == checking_player:
+			return
+		
+		x0 = move % self.size
+		y0 = move // self.size
+		xs = np.full(self.size, x0)
+		ys = np.full(self.size, y0)
+		left = range(x0 - 1, -1, -1)
+		right = range(x0, self.size)
+		up = range(y0 - 1, -1, -1)
+		down = range(y0, self.size)
+		
+		def count_(arr_x, arr_y):
+			count = 0
+			for x, y in zip(arr_x, arr_y):
+				if checking_player == self.states.get(y * self.size + x, invalid_player):
+					count += 1
+				else:
+					return count
+			return count
+	
+		if (
+			self.n_in_row == (count_(left, ys) + count_(right, ys)) or
+			self.n_in_row == (count_(xs, up) + count_(xs, down)) or
+			self.n_in_row == (count_(left, down) + count_(right, up)) or
+			self.n_in_row == (count_(left, up) + count_(right, down))
+		):
+			self._winner = checking_player
 
 	def init_board(self, start_player=0):
-			if self.size < self.n_in_row:
-					raise Exception('board size can not be less than {}'.format(self.n_in_row))
-			self.current_player = self.players[start_player]  # start player
-			# keep available moves in a list
-			self.availables = list(range(self.size * self.size))
-			self.states = {}
-			self.last_move = -1
+		if self.size < self.n_in_row:
+			raise Exception('board size can not be less than {}'.format(self.n_in_row))
+		self.current_player = self.players[start_player]  # start player
+		# keep available moves in a list
+		self.availables = list(range(self.size * self.size))
+		self.states = {}
+		self.last_move = -1
 
 	def location_to_move(self, location):
-			if len(location) != 2:
-					return -1
-			h = location[0]
-			w = location[1]
-			move = h * self.size + w
-			if move not in range(self.size * self.size):
-					return -1
-			return move
+		if len(location) != 2:
+			return -1
+		h = location[0]
+		w = location[1]
+		move = h * self.size + w
+		if move not in range(self.size * self.size):
+			return -1
+		return move
 
 	def current_state(self):
-			"""return the board state from the perspective of the current player.
-			state shape: 4*size*size
-			"""
+		"""return the board state from the perspective of the current player.
+		state shape: 4*size*size
+		"""
 
-			square_state = np.zeros((4, self.size, self.size))
-			if self.states:
-					moves, players = np.array(list(zip(*self.states.items())))
-					move_curr = moves[players == self.current_player]
-					move_oppo = moves[players != self.current_player]
-					square_state[0][move_curr // self.size,
-													move_curr % self.size] = 1.0
-					square_state[1][move_oppo // self.size,
-													move_oppo % self.size] = 1.0
-					# indicate the last move location
-					square_state[2][self.last_move // self.size,
-													self.last_move % self.size] = 1.0
-			if len(self.states) % 2 == 0:
-					square_state[3][:, :] = 1.0  # indicate the colour to play
-			return square_state[:, ::-1, :]
+		square_state = np.zeros((4, self.size, self.size))
+		if self.states:
+			moves, players = np.array(list(zip(*self.states.items())))
+			move_curr = moves[players == self.current_player]
+			move_oppo = moves[players != self.current_player]
+			square_state[0][move_curr // self.size, move_curr % self.size] = 1.0
+			square_state[1][move_oppo // self.size, move_oppo % self.size] = 1.0
+			# indicate the last move location
+			square_state[2][self.last_move // self.size, self.last_move % self.size] = 1.0
+		if len(self.states) % 2 == 0:
+			square_state[3][:, :] = 1.0  # indicate the colour to play
+		return square_state[:, ::-1, :]
 
 	def do_move(self, move):
-			self.states[move] = self.current_player
-			self.availables.remove(move)
-			self.current_player = (
-					self.players[0] if self.current_player == self.players[1]
-					else self.players[1]
-			)
-			self.last_move = move
+		self.states[move] = self.current_player
+		self._check_if_win(move)
+		self.availables.remove(move)
+		self.current_player = (
+			self.players[0] if self.current_player == self.players[1]
+			else self.players[1]
+		)
+		self.last_move = move
 
 	def has_a_winner(self):
-			size = self.size
-			states = self.states
-			n = self.n_in_row
+		size = self.size
+		states = self.states
+		n = self.n_in_row
 
-			moved = list(set(range(size * size)) - set(self.availables))
-			if len(moved) < self.n_in_row + 2:
-					return False, -1
+		moved = list(set(range(size * size)) - set(self.availables))
+		if len(moved) < self.n_in_row + 2:
+				return False, -1
 
-			for m in moved:
-					h = m // size
-					w = m % size
-					player = states[m]
+		for m in moved:
+			h = m // size
+			w = m % size
+			player = states[m]
 
-					if (w in range(size - n + 1) and
-									len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
-							return True, player
+			if (w in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
+				return True, player
 
-					if (h in range(size - n + 1) and
-									len(set(states.get(i, -1) for i in range(m, m + n * size, size))) == 1):
-							return True, player
+			if (h in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n * size, size))) == 1):
+				return True, player
 
-					if (w in range(size - n + 1) and h in range(size - n + 1) and
-									len(set(states.get(i, -1) for i in range(m, m + n * (size + 1), size + 1))) == 1):
-							return True, player
+			if (w in range(size - n + 1) and h in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n * (size + 1), size + 1))) == 1):
+				return True, player
 
-					if (w in range(n - 1, size) and h in range(size - n + 1) and
-									len(set(states.get(i, -1) for i in range(m, m + n * (size - 1), size - 1))) == 1):
-							return True, player
+			if (w in range(n - 1, size) and h in range(size - n + 1) and len(set(states.get(i, -1) for i in range(m, m + n * (size - 1), size - 1))) == 1):
+				return True, player
 
-			return False, -1
+		return False, -1
 
 	def game_end(self):
-			"""Check whether the game is ended or not"""
-			win, winner = self.has_a_winner()
-			if win:
-					return True, winner
-			elif not len(self.availables):
-					return True, -1
-			return False, -1
+		"""Check whether the game is ended or not"""
+		win, winner = self.has_a_winner()
+		if win:
+			return True, winner
+		elif 0 == len(self.availables):
+			return True, -1
+		return False, -1
 
 	def get_current_player(self):
-			return self.current_player
+		return self.current_player
 
 class Game(object):
 	"""game server"""
@@ -176,3 +208,10 @@ class Game(object):
 					else:
 						print("Game end. Tie")
 				return winner, zip(states, mcts_probs, winners_z)
+'''
+Notes:
+If the MC tree is not cleaned every single self play,
+	the training will be stuck in several scenario,
+	will cause the trained AI stupid.
+So should better use reset_player() to clean the MC tree.
+'''

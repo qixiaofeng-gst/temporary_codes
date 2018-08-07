@@ -15,6 +15,7 @@ from mcts_alpha_zero import MCTSPlayer
 from policy_value_net import PolicyValueNet # Tensorflow
 from datetime import datetime
 
+model_path = 'models/3000+/current_policy.model'
 game_batch_num = 1 #1500 # takes about 6 hours to train.
 
 class TrainPipeline():
@@ -80,11 +81,13 @@ class TrainPipeline():
 	def collect_selfplay_data(self, n_games=1):
 		"""collect self-play data for training"""
 		for i in range(n_games):
+			ts = datetime.now().timestamp()
 			winner, play_data = self.game.start_self_play(
 				self.mcts_player,
 				temp = self.temp,
-				is_shown = 1
+				is_shown = 0
 			)
+			print('A self play cost {} seconds.'.format(datetime.now().timestamp() - ts))
 			play_data = list(play_data)[:]
 			self.episode_len = len(play_data)
 			# augment the data
@@ -152,11 +155,11 @@ class TrainPipeline():
 			if len(self.data_buffer) > self.batch_size:
 				loss, entropy = self.policy_update()
 
-		self.policy_value_net.save_model('models/3000+/current_policy.model')
+		self.policy_value_net.save_model(model_path)
 		print('Cost {} seconds to update policy value net.'.format(datetime.now().timestamp() - ts))
 
 if __name__ == '__main__':
 	ts = datetime.now().timestamp()
-	training_pipeline = TrainPipeline('models/3000+/current_policy.model')
+	training_pipeline = TrainPipeline(model_path)
 	training_pipeline.run()
 	print('Totally cost {} seconds to train.'.format(datetime.now().timestamp() - ts))
