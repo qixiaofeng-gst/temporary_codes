@@ -23,7 +23,6 @@ html, body {
   background: #232d2e;
   border-top: solid .5vh #cf9a00;
   border-bottom: solid .5vh #cf9a00;
-  color: #90d8d6;
   
   font-size: 3vh;
   height: 10vh;
@@ -88,9 +87,22 @@ html, body {
 }
 
 .level_1 > a, .level_2 > a, .level_3 > a {
-  color: #90d8d6;
   text-decoration: none;
-  border-bottom: 2px solid #90d8d6;
+}
+
+.level_1 > a {
+  color: #66ffff;
+  border-bottom: 2px solid #66ffff;
+}
+
+.level_2 > a {
+  color: #ffcc33;
+  border-bottom: 2px solid #ffcc33;
+}
+
+.level_3 > a {
+  color: #ffffcc;
+  border-bottom: 2px solid #ffffcc;
 }
 
 .header > img.logo {
@@ -141,7 +153,7 @@ html, body {
 .inner {
   position: absolute;
   overflow-y: auto;
-  color: #90d8d6;
+  color: #33fcf6;
   
   line-height: 3vh;
   font-size: 2vh;
@@ -163,7 +175,6 @@ html, body {
 
 .level_1_link, .level_2_link, .level_3_title {
   position: relative;
-  color: #90d8d6;
   font-weight: bold;
   text-decoration: none;
   
@@ -171,12 +182,17 @@ html, body {
   margin-left: 5vh;
   font-size: 3vh;
 }
-.level_1_link, .level_2_link {
-  border-bottom: 2px solid #90d8d6;
+.level_1_link {
+  color: #33fcf6;
+  border-bottom: 2px solid #33fcf6;
+}
+.level_2_link {
+  color: #33cccc;
+  border-bottom: 2px solid #33cccc;
 }
 .level_3_title {
   padding-bottom: 2px;
-  color: #898c40;
+  color: #cc9933;
   text-shadow:
    -2px -2px 0 #000,  
     2px -2px 0 #000,
