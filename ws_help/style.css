@@ -1,0 +1,207 @@
+
+html, body {
+  touch-action:none;
+  content-zooming:none;
+  margin:0;
+  padding:0;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+
+  background-image: url(images/bg.png);
+  position: relative;
+}
+
+.top {
+  height: 2vh;
+}
+
+.header {
+  display: flex;
+  position: relative;
+  font-weight: bold;
+  background: #232d2e;
+  border-top: solid .5vh #cf9a00;
+  border-bottom: solid .5vh #cf9a00;
+  color: #90d8d6;
+  
+  font-size: 3vh;
+  height: 10vh;
+}
+
+.header > div {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-repeat: repeat-x;
+  
+  height: 100%;
+  background-size: 6vh 100%;
+  padding-right: 3vh;
+}
+
+.header > div:after {
+  content: "";
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 9;
+  
+  height: 100%;
+  background-size: 100% 100%;
+  width: 6vh;
+  margin-right: -6vh;
+}
+
+.header > .level_1 {
+  background-image: url(images/tail.png);
+  z-index: 9;
+  
+  padding-left: 25vh;
+}
+
+.header > .level_1:after {
+  background-image: url(images/triangle.png);
+}
+
+.header > .level_2 {
+  background-image: url(images/tail_2.png);
+  z-index: 6;
+  
+  padding-left: 10vh;
+}
+
+.header > .level_2:after {
+  background-image: url(images/triangle_2.png);
+}
+
+.header > .level_3 {
+  background-image: url(images/tail_3.png);
+  z-index: 3;
+  
+  padding-left: 10vh;
+}
+
+.header > .level_3:after {
+  background-image: url(images/triangle_3.png);
+}
+
+.level_1 > a, .level_2 > a, .level_3 > a {
+  color: #90d8d6;
+  text-decoration: none;
+  border-bottom: 2px solid #90d8d6;
+}
+
+.header > img.logo {
+  display: block;
+  position: absolute;
+  z-index: 99;
+  
+  height: 10vh;
+  width: 11.5vh;
+  left: 10vh;
+  bottom: 1vh;
+}
+
+.content {
+  position: absolute;
+  background-image: url(images/content_bg.png);
+  
+  top: 13vh;
+  bottom: 0;
+  left: 15vh;
+  right: 15vh;
+}
+
+.content:before, .content:after {
+  content: "";
+  display: block;
+  position: absolute;
+  background-repeat: repeat-y;
+  
+  top: 0;
+  bottom: 0;
+  background-size: 5vh 5vh;
+  width: 5vh;
+}
+
+.content:before {
+  background-image: url(images/left_edge.png);
+  
+  left: -5vh;
+}
+
+.content:after {
+  background-image: url(images/right_edge.png);
+  
+  right: -5vh;
+}
+
+.inner {
+  position: absolute;
+  overflow-y: auto;
+  color: #90d8d6;
+  
+  line-height: 3vh;
+  font-size: 2vh;
+  top: 5vh;
+  bottom: 5vh;
+  right: 5vh;
+  left: 5vh;
+}
+
+.link_wrapper {
+  display: inline-block;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  
+  width: 48%;
+  height: 5vh;
+}
+
+.level_1_link, .level_2_link, .level_3_title {
+  position: relative;
+  color: #90d8d6;
+  font-weight: bold;
+  text-decoration: none;
+  
+  line-height: 4vh;
+  margin-left: 5vh;
+  font-size: 3vh;
+}
+.level_1_link, .level_2_link {
+  border-bottom: 2px solid #90d8d6;
+}
+.level_3_title {
+  padding-bottom: 2px;
+  color: #898c40;
+  text-shadow:
+   -2px -2px 0 #000,  
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+     2px 2px 0 #000;
+}
+
+.level_1_link:before, .level_2_link:before, .level_3_title:before {
+  content: "";
+  display: block;
+  background-size: 100% 100%;
+  position: absolute;
+  
+  width: 4.6vh;
+  height:  4vh;
+  top: 0;
+  left: -5vh;
+}
+
+.level_1_link:before {
+  background-image: url(images/icon_world_help_2.png);
+}
+.level_2_link:before, .level_3_title:before {
+  background-image: url(images/icon_world_help_3.png);
+}
+p {
+  margin: 3vh 0 3vh 5vh;
+}
