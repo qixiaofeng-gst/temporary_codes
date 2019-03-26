@@ -93,10 +93,10 @@ def end_game():
 			c.mami.unbind(mouse_click)
 	print('Game End.')
 
-def run():
+def run(model_path):
 	size, n = 6, 4
 	board = Board(size=size, n_in_row=n)
-	best_policy = PolicyValueNet(size, 'models/3000+/current_policy.model')
+	best_policy = PolicyValueNet(size, model_path)
 	# Below set larger n_playout for better performance
 	mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
 	board.init_board((0 if human_first else 1))
@@ -126,6 +126,10 @@ if __name__ == '__main__':
 		'-f', '--human_first', action='store_true',
 		help='Determine human go first or not.'
 	)
+	parser.add_argument(
+		'-a', '--against', type=str, default='models/3000+/current_policy.model',
+		help='The opponent\'s AI model path.'
+	)
 	flags = parser.parse_args()
 	human_first = flags.human_first
-	run()
+	run(flags.against)

@@ -16,7 +16,6 @@ from policy_value_net import PolicyValueNet # Tensorflow
 from datetime import datetime
 import argparse
 
-model_path = 'models/3000+/current_policy.model'
 game_batch_num = 1 #1500 # takes about 6 hours to train.
 board_size = 6
 n_in_row = 4
@@ -46,6 +45,7 @@ class TrainPipeline():
 		# num of simulations used for the pure mcts, which is used as
 		# the opponent to evaluate the trained policy
 		self.pure_mcts_playout_num = 1000
+		self.model_path = init_model
 		self.policy_value_net = PolicyValueNet(
 			board_size, model_file=init_model
 		)
@@ -156,7 +156,7 @@ class TrainPipeline():
 			if len(self.data_buffer) > self.batch_size:
 				loss, entropy = self.policy_update()
 
-		self.policy_value_net.save_model(model_path)
+		self.policy_value_net.save_model(self.model_path)
 		print('Cost {} seconds to update policy value net.'.format(datetime.now().timestamp() - ts))
 
 def test_(model_1, model_2):
@@ -191,9 +191,19 @@ def test_(model_1, model_2):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-t', action = 'store_true', help = 'Determine if use test mode.')
-	parser.add_argument('-p1', type = str, default = 'models/current_policy.model', help = 'First players model path.')
-	parser.add_argument('-p2', type = str, default = model_path, help = 'Second players model path.')
+	parser.add_argument(
+		'-t', action = 'store_true', help = 'Determine if use test mode.'
+	)
+	parser.add_argument(
+		'-p1', type = str, default = 'models/current_policy.model', help = 'First players model path.'
+	)
+	parser.add_argument(
+		'-p2', type = str, default = 'models/3000+/current_policy.model', help = 'Second players model path.'
+	)
+	parser.add_argument(
+		'-a', '--against', type=str, default='models/3000+/current_policy.model',
+		help='The opponent\'s AI model path.'
+	)
 	args = parser.parse_args()
 	if args.t:
 		ts = datetime.now().timestamp()
@@ -201,6 +211,6 @@ if __name__ == '__main__':
 		print('Totally cost {} seconds to test.'.format(datetime.now().timestamp() - ts))
 	else:
 		ts = datetime.now().timestamp()
-		training_pipeline = TrainPipeline(model_path)
+		training_pipeline = TrainPipeline(args.against)
 		training_pipeline.run()
 		print('Totally cost {} seconds to train.'.format(datetime.now().timestamp() - ts))
