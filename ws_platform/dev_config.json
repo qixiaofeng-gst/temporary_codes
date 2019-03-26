@@ -1,0 +1,30 @@
+{
+    "ServerListUrl":"http://127.0.0.1:8001/ws-portal/server/list",
+    "AccountRegistertURL":"http://127.0.0.1:8001/ws-portal/account/register",
+    "AccountLoginURL":"http://127.0.0.1:8001/ws-portal/account/rheaIdLogin",
+    "AccountThridLoginURL":"http://127.0.0.1:8001/ws-portal/account/thirdLogin",
+    "VersionCheckURL":"http://127.0.0.1:8001/ws-portal/version/check",
+    "AccountCheckURL":"http://127.0.0.1:8001/ws-portal/account/login",
+    "GetBoundChannelURL":"http://127.0.0.1:8001/ws-portal/account/getSpTypeList",
+    "BoundChannelURL":"http://127.0.0.1:8001/ws-portal/account/bound",
+    "AccountGetRheaIdURL":"http://127.0.0.1:8001/ws-portal/account/getRheaId",
+    
+    "UpdateUrl":"http://127.0.0.1:8002/",
+    "UpdateUrl2":"http://127.0.0.1:8002/",
+    "WebImageUrl":"http://127.0.0.1:8002/resource/",
+    "LanguageUrl":"http://127.0.0.1:8002/resource/Language/",
+    "UpdateFileListUrl":"http://127.0.0.1:8001/ws-portal/version/hotUpdate",
+    "HelpWebURL":"http://127.0.0.1:8002/help/",
+    
+    "WebAvatarImageUrl":"http://127.0.0.1:8002/ws_avatar/",
+    "WebAvatarImageUrl2":"http://127.0.0.1:8002/ws_avatar/",
+    "AvatarImageUploadUrl":"http://127.0.0.1:8001/rhea-file-upload/imageBinaryUpload/ws_avatar",
+    "AvatarImageDeleteUrl":"http://127.0.0.1:8001/rhea-file-upload/imageBinaryUpload/ws_avatar_delete",
+    
+    "OrderRegister":"http://192.168.1.250:8080/rhea-pay/order/register",
+    "OrderCallBackAndroid":"http://192.168.1.250:8080/rhea-pay/order/notify/google-play",
+    "OrderCallBackIOS":"http://192.168.1.250:8080/rhea-pay/order/notify/app-store",
+    
+    "ExceptionCollectURL":"http://192.168.1.47:8080/rhea-collect/exception/collect",
+    "PingCollectURL":"http://192.168.1.47:8080/rhea-collect/ping/collect"
+}
